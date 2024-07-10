@@ -183,6 +183,136 @@ weston_color_profile_params_to_str(struct weston_color_profile_params *params,
 }
 
 /**
+ * Given a transfer function, returns a struct weston_color_curve that
+ * matches it.
+ *
+ * It can also be used to create the inverse of the given tf.
+ *
+ * This should be used to create color curves from color parameters.
+ *
+ * \param tf_info The tf_info object.
+ * \param tf_params The params for the given tf_info object. May be NULL
+ * depending on the tf.
+ * \param inverse Set to true to create the inverse of the tf, false otherwise.
+ * \returns The new struct weston_color_curve.
+ */
+WL_EXPORT struct weston_color_curve *
+weston_color_curve_from_tf_info(const struct weston_color_tf_info *tf_info,
+				const float *tf_params, bool inverse)
+{
+	struct weston_color_curve *curve;
+	struct weston_color_curve_parametric *parametric;
+	unsigned int i;
+
+	if (tf_info->has_parameters)
+		assert(tf_params);
+
+	curve = xzalloc(sizeof(*curve));
+	parametric = &curve->u.parametric;
+
+	/**
+	 * See enum weston_color_curve_type to learn more about each color curve
+	 * supported by Weston.
+	 */
+	switch(tf_info->tf) {
+	case WESTON_TF_LINEAR:
+		curve->type = WESTON_COLOR_CURVE_TYPE_IDENTITY;
+		break;
+	case WESTON_TF_GAMMA22:
+		curve->type = WESTON_COLOR_CURVE_TYPE_LINPOW;
+		parametric->clamped_input = false;
+		for (i = 0; i < ARRAY_LENGTH(parametric->params); i++) {
+			parametric->params[i][0] = inverse ? (1.0f / 2.2f) :
+						   2.2; /* g */
+			parametric->params[i][1] = 1.0; /* a */
+			parametric->params[i][2] = 0.0; /* b */
+			parametric->params[i][3] = 1.0; /* c */
+			parametric->params[i][4] = 0.0; /* d */
+		}
+		break;
+	case WESTON_TF_GAMMA28:
+		curve->type = WESTON_COLOR_CURVE_TYPE_LINPOW;
+		parametric->clamped_input = false;
+		for (i = 0; i < ARRAY_LENGTH(parametric->params); i++) {
+			parametric->params[i][0] = inverse ? (1.0f / 2.8f) :
+						   2.8; /* g */
+			parametric->params[i][1] = 1.0; /* a */
+			parametric->params[i][2] = 0.0; /* b */
+			parametric->params[i][3] = 1.0; /* c */
+			parametric->params[i][4] = 0.0; /* d */
+		}
+		break;
+	case WESTON_TF_POWER:
+		curve->type = WESTON_COLOR_CURVE_TYPE_LINPOW;
+		parametric->clamped_input = false;
+		for (i = 0; i < ARRAY_LENGTH(parametric->params); i++) {
+			parametric->params[i][0] = inverse ? (1.0f / tf_params[0]) :
+						   tf_params[0]; /* g */
+			parametric->params[i][1] = 1.0;		 /* a */
+			parametric->params[i][2] = 0.0;		 /* b */
+			parametric->params[i][3] = 1.0;		 /* c */
+			parametric->params[i][4] = 0.0;		 /* d */
+		}
+		break;
+	case WESTON_TF_SRGB:
+		float g = 2.4;
+		float a = 1.0f / 1.055f;
+		float b = 0.055f / 1.055f;
+		float c = 1.0f / 12.92f;
+		float d = 0.04045;
+
+		curve->type = inverse ? WESTON_COLOR_CURVE_TYPE_POWLIN :
+					WESTON_COLOR_CURVE_TYPE_LINPOW;
+		parametric->clamped_input = false;
+
+		/* sRGB curve is defined as:
+		 *
+		 * y = (a * x + b) ^ g | x >= d
+		 * y = c * x           | else
+		 *
+		 * Computing its inverse, we have:
+		 *
+		 * y = ((x ^ (1 / g)) / a) - (b / a) | x >= c * d or (a * d + b) ^ g
+		 * y = x / c			     | else
+		 *
+		 * POWLIN is defined as:
+		 *
+		 * y = (a * (x ^ g)) + b | x >= d
+		 * y = c * x             | 0 <= x < d
+		 *
+		 * So we need to take the sRGB curve params and adjust:
+		 *
+		 * g ←  1 / g
+		 * a ←  1 / a
+		 * b ← -b / a
+		 * c ←  1 / c
+		 * d ←  c * d
+		 */
+		if (inverse) {
+			g = 1.0f / g;
+			b = -b / a;
+			a = 1.0f / a;
+			d = c * d;
+			c = 1.0f / c;
+		}
+		for (i = 0; i < ARRAY_LENGTH(parametric->params); i++) {
+			parametric->params[i][0] = g;
+			parametric->params[i][1] = a;
+			parametric->params[i][2] = b;
+			parametric->params[i][3] = c;
+			parametric->params[i][4] = d;
+		}
+		break;
+	default:
+		/* Curve not supported. */
+		free(curve);
+		return NULL;
+	}
+
+	return curve;
+}
+
+/**
  * Increase reference count of the color transform object
  *
  * \param xform The color transform. NULL is accepted too.

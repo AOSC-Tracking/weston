@@ -580,6 +580,10 @@ char *
 weston_color_profile_params_to_str(struct weston_color_profile_params *params,
 				   const char *ident);
 
+struct weston_color_curve *
+weston_color_curve_from_tf_info(const struct weston_color_tf_info *tf_info,
+				const float *tf_params, bool inverse);
+
 struct weston_color_transform *
 weston_color_transform_ref(struct weston_color_transform *xform);
 
