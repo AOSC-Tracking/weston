@@ -63,6 +63,8 @@ enum gl_shader_color_curve {
 	SHADER_COLOR_CURVE_LUT_3x1D,
 	SHADER_COLOR_CURVE_LINPOW,
 	SHADER_COLOR_CURVE_POWLIN,
+	SHADER_COLOR_CURVE_PQ,
+	SHADER_COLOR_CURVE_PQ_INVERSE,
 };
 
 /* Keep the following in sync with fragment.glsl. */
@@ -97,16 +99,16 @@ struct gl_shader_requirements
 	bool green_tint:1;
 	bool wireframe:1;
 
-	unsigned color_pre_curve:2; /* enum gl_shader_color_curve */
+	unsigned color_pre_curve:3; /* enum gl_shader_color_curve */
 	unsigned color_mapping:2; /* enum gl_shader_color_mapping */
-	unsigned color_post_curve:2; /* enum gl_shader_color_curve */
+	unsigned color_post_curve:3; /* enum gl_shader_color_curve */
 	unsigned color_channel_order:2; /* enum gl_channel_order */
 
 	/*
 	 * The total size of all bitfields plus pad_bits_ must fill up exactly
 	 * how many bytes the compiler allocates for them together.
 	 */
-	unsigned pad_bits_:16;
+	unsigned pad_bits_:14;
 };
 static_assert(sizeof(struct gl_shader_requirements) ==
 	      4 /* total bitfield size in bytes */,
