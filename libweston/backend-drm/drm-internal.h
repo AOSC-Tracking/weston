@@ -180,6 +180,12 @@ enum actions_needed_dmabuf_feedback {
 	ACTION_NEEDED_REMOVE_SCANOUT_TRANCHE = (1 << 1),
 };
 
+enum drm_overlay_subtype {
+	OVERLAY_SUBTYPE_OVERLAY_ONLY = 0,
+	OVERLAY_SUBTYPE_UNDERLAY_ONLY = 1,
+	OVERLAY_SUBTYPE_BOTH = 2,
+};
+
 struct drm_device {
 	struct drm_backend *backend;
 
@@ -417,8 +423,8 @@ struct drm_plane {
 	uint32_t crtc_id;
 
 	struct drm_property_info props[WDRM_PLANE__COUNT];
-	/* True if the plane's zpos_max < primary plane's zpos_min. */
-	bool is_underlay;
+
+	enum drm_overlay_subtype overlay_subtype;
 
 	/* The last state submitted to the kernel for this plane. */
 	struct drm_plane_state *state_cur;
@@ -656,7 +662,15 @@ drm_output_get_plane_type_name(struct drm_plane *p)
 	case WDRM_PLANE_TYPE_CURSOR:
 		return "cursor";
 	case WDRM_PLANE_TYPE_OVERLAY:
-		return p->is_underlay ? "underlay" : "overlay";
+		switch(p->overlay_subtype) {
+		case OVERLAY_SUBTYPE_OVERLAY_ONLY:
+			return "overlay";
+		case OVERLAY_SUBTYPE_UNDERLAY_ONLY:
+			return "underlay";
+		case OVERLAY_SUBTYPE_BOTH:
+			return "under/overlay";
+		}
+		/* fall through */
 	default:
 		assert(0);
 		break;
