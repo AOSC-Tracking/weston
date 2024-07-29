@@ -371,14 +371,16 @@ rdp_output_set_mode(struct weston_output *base, struct weston_mode *mode)
 				pixman->create_image_from_ptr(output, b->formats[0],
 							      mode->width, mode->height,
 							      pixman_image_get_data(new_image),
-							      mode->width * 4);
+							      mode->width * 4,
+							      NULL, NULL);
 			break;
 		}
 		case WESTON_RENDERER_GL:
 			new_renderbuffer =
 				renderer->gl->create_fbo(output, b->formats[0],
 							 mode->width, mode->height,
-							 pixman_image_get_data(new_image));
+							 pixman_image_get_data(new_image),
+							 NULL, NULL);
 			break;
 		default:
 			unreachable("cannot have auto renderer at runtime");
@@ -470,7 +472,8 @@ rdp_output_enable(struct weston_output *base)
 						      output->base.current_mode->width,
 						      output->base.current_mode->height,
 						      pixman_image_get_data(output->shadow_surface),
-						      output->base.current_mode->width * 4);
+						      output->base.current_mode->width * 4,
+						      NULL, NULL);
 		if (output->renderbuffer == NULL) {
 			weston_log("Failed to create surface for frame buffer.\n");
 			renderer->pixman->output_destroy(&output->base);
@@ -499,7 +502,8 @@ rdp_output_enable(struct weston_output *base)
 			renderer->gl->create_fbo(&output->base, b->formats[0],
 						 output->base.current_mode->width,
 						 output->base.current_mode->height,
-						 pixman_image_get_data(output->shadow_surface));
+						 pixman_image_get_data(output->shadow_surface),
+						 NULL, NULL);
 		if (output->renderbuffer == NULL) {
 			weston_log("Failed to create surface for frame buffer.\n");
 			renderer->pixman->output_destroy(&output->base);
