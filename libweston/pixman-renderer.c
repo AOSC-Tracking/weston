@@ -1049,8 +1049,7 @@ debug_binding(struct weston_keyboard *keyboard, const struct timespec *time,
 static weston_renderbuffer_t
 pixman_renderer_create_renderbuffer(struct weston_output *output,
 				    const struct pixel_format_info *format,
-				    int width, int height, void *buffer,
-				    int stride,
+				    void *buffer, int stride,
 				    weston_renderbuffer_discarded_func discarded_cb,
 				    void *user_data)
 {
@@ -1063,13 +1062,16 @@ pixman_renderer_create_renderbuffer(struct weston_output *output,
 
 	if (buffer)
 		renderbuffer->image =
-			pixman_image_create_bits(format->pixman_format, width,
-						 height, buffer, stride);
+			pixman_image_create_bits(format->pixman_format,
+						 output->current_mode->width,
+						 output->current_mode->height,
+						 buffer, stride);
 	else
 		renderbuffer->image =
 			pixman_image_create_bits_no_clear(format->pixman_format,
-							  width, height, NULL,
-							  0);
+							  output->current_mode->width,
+							  output->current_mode->height,
+							  NULL, 0);
 
 	if (!renderbuffer->image) {
 		free(renderbuffer);
