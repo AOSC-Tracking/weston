@@ -123,7 +123,8 @@ struct weston_color_profile {
 	int ref_count;
 	char *description;
 
-	/* Unique id to be used by the CM&HDR protocol extension. */
+	/* Unique id to be used by the CM&HDR protocol extension. Should not
+	 * be confused with the protocol object id. */
 	uint32_t id;
 };
 
@@ -202,6 +203,25 @@ enum weston_color_curve_type {
 	 * input value, it uses mirroring (i.e. -f(-x)).
 	 */
 	WESTON_COLOR_CURVE_TYPE_POWLIN,
+
+	/** Transfer function named PQ (perceptual quantizer)
+	 *
+	 * Transfer characteristics as defined by - SMPTE ST 2084 (2014) for
+	 * 10-, 12-, 14- and 16-bit systems - Rec. ITU-R BT.2100-2 perceptual
+	 * quantization (PQ) system Equivalent to H.273 TransferCharacteristics
+	 * code point 16.
+	 *
+	 * The input for this curve is always clamped to [0.0, 1.0].
+	 */
+	WESTON_COLOR_CURVE_TYPE_PQ,
+
+	/** Transfer function inverse of PQ (perceptual quantizer)
+	 *
+	 * The inverse curve of the above.
+	 *
+	 * The input for this curve is always clamped to [0.0, 1.0].
+	 */
+	WESTON_COLOR_CURVE_TYPE_PQ_INVERSE,
 };
 
 /** LUT_3x1D parameters */
@@ -574,6 +594,15 @@ struct weston_color_manager {
 void
 weston_color_profile_init(struct weston_color_profile *cprof,
 			  struct weston_color_manager *cm);
+
+char *
+weston_color_profile_params_to_str(struct weston_color_profile_params *params,
+				   const char *ident);
+
+struct weston_color_curve *
+weston_color_curve_from_tf_info(struct weston_compositor *compositor,
+				const struct weston_color_tf_info *tf_info,
+				const float *tf_params, bool inverse);
 
 struct weston_color_transform *
 weston_color_transform_ref(struct weston_color_transform *xform);
