@@ -513,7 +513,7 @@ drm_output_find_plane_for_view(struct drm_output_state *state,
 
 		possible_plane_mask &= ~(1 << plane->plane_idx);
 		mm_has_underlay =
-			drm_mixed_mode_check_underlay(mode, scanout_state, plane->zpos_max);
+			drm_mixed_mode_check_underlay(mode, scanout_state, plane->zpos_min);
 
 		switch (plane->type) {
 		case WDRM_PLANE_TYPE_CURSOR:
