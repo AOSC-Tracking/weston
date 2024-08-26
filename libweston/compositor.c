@@ -1562,7 +1562,7 @@ weston_surface_assign_output(struct weston_surface *es)
 		}
 
 		/* All else being equal, prefer the primary backend */
-		if (area == max && new_output &&
+		if (area == max && new_output && view->output->backend &&
 		    view->output->backend == es->compositor->primary_backend) {
 			new_output = view->output;
 		}
@@ -1634,7 +1634,7 @@ weston_view_assign_output(struct weston_view *ev)
 		}
 
 		/* All else being equal, prefer the primary backend */
-		if (new_output && new_output_area == area &&
+		if (new_output && new_output_area == area && output->backend &&
 		    output->backend == ec->primary_backend) {
 			new_output = output;
 		}
@@ -3920,6 +3920,22 @@ weston_output_schedule_repaint_restart(struct weston_output *output)
 	weston_output_damage(output);
 }
 
+static struct weston_backend *
+get_drm_backend(struct weston_compositor *compositor)
+{
+       struct weston_backend *iter;
+       struct weston_backend *found = NULL;
+
+       wl_list_for_each(iter, &compositor->backend_list, link) {
+               if (iter->backend_type == WESTON_BACKEND_DRM) {
+                       found = iter;
+                       break;
+               }
+       }
+
+       return found;
+}
+
 static int
 output_repaint_timer_handler(void *data)
 {
@@ -3939,7 +3955,19 @@ output_repaint_timer_handler(void *data)
 		}
 
 		output->will_repaint = true;
-		output->backend->will_repaint = true;
+		if (output->backend) {
+			output->backend->will_repaint = true;
+		} else if (output->is_virtual) {
+			/* if the output is virtual for sure it must be driven
+			 * by a the DRM backend */
+			struct weston_backend *drm_weston_backend =
+				get_drm_backend(compositor);
+			assert(drm_weston_backend);
+
+			drm_weston_backend->will_repaint = true;
+		} else {
+			assert(!"No backend set-up or output is not a virtual one!");
+		}
 
 		if (output->prepare_repaint)
 			output->prepare_repaint(output);
@@ -3955,7 +3983,8 @@ output_repaint_timer_handler(void *data)
 			backend->repaint_begin(backend);
 
 		wl_list_for_each(output, &compositor->output_list, link) {
-			if (output->backend != backend)
+			if (output->backend &&
+			    output->backend != backend)
 				continue;
 
 			if (!output->will_repaint)
@@ -3973,7 +4002,8 @@ output_repaint_timer_handler(void *data)
 				backend->repaint_cancel(backend);
 
 			wl_list_for_each(output, &compositor->output_list, link) {
-				if (output->backend != backend)
+				if (output->backend &&
+				    output->backend != backend)
 					continue;
 
 				if (output->repainted)

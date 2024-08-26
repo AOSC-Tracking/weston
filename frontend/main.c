@@ -2612,6 +2612,11 @@ wet_output_handle_create(struct wl_listener *listener, void *data)
 
 	struct wet_backend *wb;
 
+	/* plug-ins do not have a backend associated, so avoid retriving
+	 * a backkend type as that will trip over */
+	if (!output->backend)
+		return;
+
 	/* just ignore events from other remote backends */
 	switch (weston_get_backend_type(output->backend)) {
 	case WESTON_BACKEND_RDP:
