@@ -585,6 +585,10 @@ struct weston_output {
 	 *  repaint handler. */
 	bool will_repaint;
 
+	/** mark this output a virtual one to allow plug-ins to function
+	 * an trigger a repaint from DRM backend */
+	bool is_virtual;
+
 	/** Used only between repaint_begin and repaint_cancel. */
 	bool repainted;
 

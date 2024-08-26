@@ -380,6 +380,7 @@ drm_virtual_output_create(struct weston_compositor *c, char *name,
 	output->base.destroy = drm_virtual_output_destroy;
 	output->base.disable = drm_virtual_output_disable;
 	output->base.prepare_repaint = drm_virtual_prepare_repaint;
+	output->base.is_virtual = output->is_virtual;
 	output->base.attach_head = NULL;
 
 	output->backend = b;
